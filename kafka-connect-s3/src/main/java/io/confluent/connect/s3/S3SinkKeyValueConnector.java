@@ -33,7 +33,7 @@ import io.confluent.connect.s3.util.Version;
  * Connector class for Amazon Simple Storage Service (S3).
  */
 public class S3SinkKeyValueConnector extends SinkConnector {
-  private static final Logger log = LoggerFactory.getLogger(S3SinkConnector.class);
+  private static final Logger log = LoggerFactory.getLogger(S3SinkKeyValueConnector.class);
   private Map<String, String> configProps;
   private S3SinkConnectorConfig config;
 
