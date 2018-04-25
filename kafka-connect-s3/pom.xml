@@ -27,7 +27,7 @@
         <version>4.1.0</version>
     </parent>
 
-    <artifactId>kafka-connect-s3</artifactId>
+    <artifactId>kafka-connect-s3-flipp</artifactId>
     <packaging>jar</packaging>
     <name>kafka-connect-s3</name>
 
