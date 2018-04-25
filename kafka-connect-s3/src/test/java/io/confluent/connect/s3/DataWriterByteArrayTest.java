@@ -19,6 +19,8 @@ package io.confluent.connect.s3;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import io.confluent.connect.s3.format.bytearray.ByteArrayFormat;
+import io.confluent.connect.s3.storage.CompressionType;
+import io.confluent.connect.s3.storage.S3OutputStream;
 import io.confluent.connect.s3.storage.S3Storage;
 import io.confluent.connect.s3.util.FileUtils;
 import io.confluent.connect.storage.partitioner.DefaultPartitioner;
@@ -29,6 +31,7 @@ import org.apache.kafka.connect.converters.ByteArrayConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.After;
 import org.junit.Test;
+import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -86,6 +89,16 @@ public class DataWriterByteArrayTest extends TestWithMockedS3 {
   }
 
   @Test
+  public void testBufferOverflowFix() throws Exception {
+    localProps.put(S3SinkConnectorConfig.FORMAT_CLASS_CONFIG, ByteArrayFormat.class.getName());
+    setUp();
+    PowerMockito.doReturn(5).when(connectorConfig).getPartSize();
+    S3OutputStream out = new S3OutputStream(S3_TEST_BUCKET_NAME, connectorConfig, s3);
+    out.write(new byte[]{65,66,67,68,69});
+    out.write(70);
+  }
+
+  @Test
   public void testNoSchema() throws Exception {
     localProps.put(S3SinkConnectorConfig.FORMAT_CLASS_CONFIG, ByteArrayFormat.class.getName());
     setUp();
@@ -101,8 +114,25 @@ public class DataWriterByteArrayTest extends TestWithMockedS3 {
   }
 
   @Test
+  public void testGzipCompression() throws Exception {
+    CompressionType compressionType = CompressionType.GZIP;
+    localProps.put(S3SinkConnectorConfig.FORMAT_CLASS_CONFIG, ByteArrayFormat.class.getName());
+    localProps.put(S3SinkConnectorConfig.COMPRESSION_TYPE_CONFIG, compressionType.name);
+    setUp();
+    task = new S3SinkTask(connectorConfig, context, storage, partitioner, format, SYSTEM_TIME);
+
+    List<SinkRecord> sinkRecords = createByteArrayRecordsWithoutSchema(7 * context.assignment().size(), 0, context.assignment());
+    task.put(sinkRecords);
+    task.close(context.assignment());
+    task.stop();
+
+    long[] validOffsets = {0, 3, 6};
+    verify(sinkRecords, validOffsets, context.assignment(), ".bin.gz");
+  }
+
+  @Test
   public void testCustomExtensionAndLineSeparator() throws Exception {
-    String extension = ".SEPARATORjson";
+    String extension = ".customExtensionForTest";
     localProps.put(S3SinkConnectorConfig.FORMAT_CLASS_CONFIG, ByteArrayFormat.class.getName());
     localProps.put(S3SinkConnectorConfig.FORMAT_BYTEARRAY_LINE_SEPARATOR_CONFIG, "SEPARATOR");
     localProps.put(S3SinkConnectorConfig.FORMAT_BYTEARRAY_EXTENSION_CONFIG, extension);
