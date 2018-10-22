@@ -56,7 +56,8 @@ public class AvroRecordWriterProvider implements RecordWriterProvider<S3SinkConn
       Schema.Type.FLOAT32,
       Schema.Type.FLOAT64,
       Schema.Type.BOOLEAN,
-      Schema.Type.STRING
+      Schema.Type.STRING,
+      Schema.Type.ARRAY
   );
 
   AvroRecordWriterProvider(S3Storage storage, AvroData avroData) {
