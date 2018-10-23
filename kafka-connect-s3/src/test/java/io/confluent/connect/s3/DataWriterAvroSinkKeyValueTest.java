@@ -14,42 +14,35 @@
  * limitations under the License.
  */
 
-    package io.confluent.connect.s3;
+package io.confluent.connect.s3;
 
-    import com.amazonaws.services.s3.AmazonS3;
-    import com.amazonaws.services.s3.model.S3ObjectSummary;
-    import org.apache.hadoop.hive.metastore.api.FieldSchema;
-    import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-    import org.apache.kafka.common.TopicPartition;
-    import org.apache.kafka.connect.data.Schema;
-    import org.apache.kafka.connect.data.SchemaBuilder;
-    import org.apache.kafka.connect.data.SchemaProjector;
-    import org.apache.kafka.connect.data.Struct;
-    import org.apache.kafka.connect.sink.SinkRecord;
-    import org.junit.After;
-    import org.junit.Test;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaBuilder;
+import org.apache.kafka.connect.data.SchemaProjector;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.junit.After;
+import org.junit.Test;
 
-    import java.io.IOException;
-    import java.util.ArrayList;
-    import java.util.Collection;
-    import java.util.Collections;
-    import java.util.HashMap;
-    import java.util.List;
-    import java.util.Map;
-    import java.util.Objects;
-    import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 
-    import io.confluent.connect.s3.format.avro.AvroFormat;
-    import io.confluent.connect.s3.storage.S3Storage;
-    import io.confluent.connect.s3.util.FileUtils;
-    import io.confluent.connect.storage.partitioner.DefaultPartitioner;
-    import io.confluent.connect.storage.partitioner.Partitioner;
-    import io.confluent.kafka.serializers.NonRecordContainer;
+import io.confluent.connect.s3.format.avro.AvroFormat;
+import io.confluent.connect.s3.storage.S3Storage;
+import io.confluent.connect.s3.util.FileUtils;
+import io.confluent.connect.storage.partitioner.DefaultPartitioner;
+import io.confluent.connect.storage.partitioner.Partitioner;
+import io.confluent.kafka.serializers.NonRecordContainer;
 
-    import static org.hamcrest.CoreMatchers.is;
-    import static org.junit.Assert.assertEquals;
-    import static org.junit.Assert.assertThat;
-    import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
 
@@ -201,6 +194,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("float", Schema.FLOAT32_SCHEMA)
         .field("double", Schema.FLOAT64_SCHEMA)
         .field("string", Schema.STRING_SCHEMA)
+        .field("array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -211,7 +205,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("long", 12L)
         .put("float", 12.2F)
         .put("double", 12.2D)
-        .put("string", "string"));
+        .put("string", "string")
+        .put("array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   protected Schema createExpectedValueSchema() {
@@ -234,6 +230,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("float", Schema.FLOAT32_SCHEMA)
         .field("double", Schema.FLOAT64_SCHEMA)
         .field("string", Schema.STRING_SCHEMA)
+        .field("array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -255,7 +252,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("long", 12L)
         .put("float", 12.2F)
         .put("double", 12.2D)
-        .put("string", "string"));
+        .put("string", "string")
+        .put("array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   // Key is a primitive string type
@@ -277,6 +276,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("float", Schema.FLOAT32_SCHEMA)
         .field("double", Schema.FLOAT64_SCHEMA)
         .field("string", Schema.STRING_SCHEMA)
+        .field("array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -288,7 +288,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("long", 12L)
         .put("float", 12.2F)
         .put("double", 12.2D)
-        .put("string", "string"));
+        .put("string", "string")
+        .put("array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   // Key is a primitive int type
@@ -310,6 +312,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("float", Schema.FLOAT32_SCHEMA)
         .field("double", Schema.FLOAT64_SCHEMA)
         .field("string", Schema.STRING_SCHEMA)
+        .field("array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -321,7 +324,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("long", 12L)
         .put("float", 12.2F)
         .put("double", 12.2D)
-        .put("string", "string"));
+        .put("string", "string")
+        .put("array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   // Value is a nested type
@@ -352,6 +357,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("layer1_float", Schema.FLOAT32_SCHEMA)
         .field("layer1_double", Schema.FLOAT64_SCHEMA)
         .field("layer1_string", Schema.STRING_SCHEMA)
+        .field("layer1_array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -402,7 +408,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("layer1_long", 12L)
         .put("layer1_float", 12.2F)
         .put("layer1_double", 12.2D)
-        .put("layer1_string", "string"));
+        .put("layer1_string", "string")
+        .put("layer1_array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   protected Schema createExpectedValueSchemaValueIsNested() {
@@ -442,6 +450,7 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .field("layer1_float", Schema.FLOAT32_SCHEMA)
         .field("layer1_double", Schema.FLOAT64_SCHEMA)
         .field("layer1_string", Schema.STRING_SCHEMA)
+        .field("layer1_array", SchemaBuilder.array(Schema.INT32_SCHEMA).build())
         .build();
   }
 
@@ -475,7 +484,9 @@ public class DataWriterAvroSinkKeyValueTest extends TestWithMockedS3 {
         .put("layer1_long", 12L)
         .put("layer1_float", 12.2F)
         .put("layer1_double", 12.2D)
-        .put("layer1_string", "string"));
+        .put("layer1_string", "string")
+        .put("layer1_array", Arrays.asList(42, 4242, 424242, 42424242))
+    );
   }
 
   /**
